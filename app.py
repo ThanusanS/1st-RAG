@@ -20,9 +20,12 @@ with st.sidebar:
         accept_multiple_files=True,
     )
     if st.button("Index documents", disabled=not uploaded_files):
-        with st.spinner("Indexing documents..."):
-            result = service.index_uploads(uploaded_files)
-        st.success(f"Indexed {result} chunk(s).")
+        try:
+            with st.spinner("Indexing documents..."):
+                result = service.index_uploads(uploaded_files)
+            st.success(f"Indexed {result} chunk(s).")
+        except RAGError as error:
+            st.error(str(error))
     st.write(f"Indexed {service.count()} chunk(s)")
     st.caption(f"Answer model: {service.settings.answer_model}")
 
