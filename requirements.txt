@@ -1,5 +1,9 @@
 google-genai
+chromadb
+fastapi
+python-multipart
 pypdf
 python-dotenv
-scikit-learn
+pytest
 streamlit
+uvicorn
