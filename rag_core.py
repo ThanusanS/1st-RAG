@@ -17,6 +17,22 @@ class RAGError(RuntimeError):
     """Expected application error shown to the user."""
 
 
+def _client_error_message(error: errors.ClientError) -> str:
+    if error.code in {401, 403}:
+        return (
+            "Gemini rejected the API key. Check that GEMINI_API_KEY is valid, "
+            "enabled for the Gemini API, and configured in Streamlit Secrets."
+        )
+    if error.code == 404:
+        return (
+            f"Gemini model or endpoint was not found ({error.status}). "
+            "Check GEMINI_MODEL and GEMINI_EMBEDDING_MODEL in Streamlit Secrets."
+        )
+    if error.code == 429:
+        return "Gemini rate limit reached. Wait briefly and try again."
+    return f"Gemini request failed ({error.code} {error.status}): {error.message}"
+
+
 @dataclass(frozen=True)
 class Settings:
     api_key: str
@@ -97,6 +113,8 @@ class RAGService:
                 if error.code != 503 or attempt == self.settings.max_retries:
                     raise RAGError(f"Embedding request failed: {error}") from error
                 time.sleep(min(2**attempt, 30))
+            except errors.ClientError as error:
+                raise RAGError(_client_error_message(error)) from error
         raise RAGError("Embedding request failed after retries.")
 
     def index_uploads(self, uploads: Iterable[Any]) -> int:
@@ -165,4 +183,6 @@ class RAGService:
                 if error.code != 503 or attempt == self.settings.max_retries:
                     raise RAGError(f"Gemini request failed: {error}") from error
                 time.sleep(min(2**attempt, 30))
+            except errors.ClientError as error:
+                raise RAGError(_client_error_message(error)) from error
         raise RAGError("Gemini request failed after retries.")
